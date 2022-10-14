@@ -1,0 +1,12 @@
+%dw 2.0
+
+type auto_665de2f5_0e1a_4fd6_9864_c6d9533ee213_Output_Payload = {
+  newsId: Number, 
+  updated_at: String, 
+  created_at: String, 
+  id: Number, 
+  message: String, 
+  deleted_at?: String, 
+  _?: Any
+}
+

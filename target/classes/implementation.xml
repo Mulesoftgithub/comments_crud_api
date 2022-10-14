@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="404e811c-dd92-47cd-9112-64caa219b389" >
+		<db:my-sql-connection host="sql11.freesqldatabase.com" port="3306" user="sql11526465" password="nBz5YEmfRk" database="sql11526465" />
+	</db:config>
+	<flow name="AddComment" doc:id="27eeeeb8-a9c9-420a-971d-ab1ab15727d3" >
+		<logger level="INFO" doc:name="Logger" doc:id="6056ccb4-f20e-4369-b88a-53829236de17" message="#[payload.newsId]"/>
+		<set-variable value='#[now() as DateTime as String {format: "uuuu-MM-dd KK:mm:ss"}]' doc:name="Set Variable" doc:id="7813d6db-027a-46e9-92bf-97966f4a52b5" variableName="currentDateTime"/>
+		<db:insert doc:name="Insert" doc:id="52a9d6b5-1ed7-4f8d-a7d9-1e61880ece80" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into Comments (newsId, message, created_at, updated_at, deleted_at) values 
+(:newsId, :message, :created_at, :updated_at, null);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	newsId: payload.newsId,
+	message: payload.message,
+	created_at: vars.currentDateTime,
+	updated_at: vars.currentDateTime
+}]]]></db:input-parameters>
+		</db:insert>
+		<db:select doc:name="Select" doc:id="b9da7d56-0edc-4a0b-9fbc-4cf26df55498" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from Comments ORDER BY id DESC LIMIT 1]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="801ba43a-ce07-4665-a45f-e8313fe7eb17" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+var element = payload[0]
+---
+{
+	id: element.id,
+	newsId: element.newsId,
+	message: element.message,
+	created_at: element.created_at,
+	updated_at: element.updated_at,
+	deleted_at: element.deleted_at
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="DeleteComment" doc:id="e5f1dbf0-ad18-43cf-b494-c9c76fb88afb" >
+		<set-variable value='#[now() as DateTime as String {format: "uuuu-MM-dd KK:mm:ss"}]' doc:name="Set Variable" doc:id="33a16a2a-a53f-4038-97d0-eba4461a3028" variableName="currentDateTime"/>
+		<db:update doc:name="Update" doc:id="1f46295a-63f1-418a-ab56-f6c86c94816e" config-ref="Database_Config">
+			<db:sql ><![CDATA[UPDATE Comments SET deleted_at = :deleted_at WHERE id = :commentID;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	deleted_at: vars.currentDateTime,
+	commentID: attributes.uriParams.commentID
+}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="855f3844-b0bd-40a3-8bb3-8672af589be4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "Comment was deleted successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="GetAllComments" doc:id="4ca5faa8-1b74-4a2f-990c-4310c991cab2" >
+		<db:select doc:name="Select" doc:id="e1747d6d-a797-41f7-aa5d-59f18cd5be7a" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM Comments WHERE deleted_at IS NULL]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="3fd7395f-5cb2-4cb4-bac9-b1a5bf820749" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+payload map {
+	id: $.id,
+	newsId: $.newsId,
+	message: $.message,
+	created_at: $.created_at,
+	updated_at: $.updated_at,
+	deleted_at: $.deleted_at
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="GetCommentByCommentID" doc:id="612fa691-c18d-4c3f-915d-b0d0eb55af14" >
+		<db:select doc:name="Select" doc:id="b4a53181-d658-4dea-bc1b-fd8329b5bc4b" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from Comments where id = :commentID and deleted_at is null;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	commentID: attributes.uriParams.commentID
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="2bff5a8c-9002-467c-ba44-45c83dbc0fd9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+var element = payload[0]
+---
+{
+	id: element.id,
+	newsId: element.newsId,
+	message: element.message,
+	created_at: element.created_at,
+	updated_at: element.updated_at,
+	deleted_at: element.deleted_at
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="EditComment" doc:id="163e51d1-857a-44ce-85f8-d164a76972e8" >
+		<logger level="INFO" doc:name="Logger" doc:id="33374fd6-60b2-42c9-8d22-7008235f30bf" message="#[payload]"/>
+		<set-variable value='#[now() as DateTime as String {format: "uuuu-MM-dd KK:mm:ss"}]' doc:name="Set Variable" doc:id="9a5e1b05-1415-4ce7-a9d5-611443dcde10" variableName="currentDateTime"/>
+		<set-variable value="#[attributes.uriParams.commentID]" doc:name="Set Variable" doc:id="8c6c1574-31cf-43de-952d-f19b564a81b9" variableName="commentID"/>
+		<db:update doc:name="Update" doc:id="de1f3a7e-5c26-406c-869b-f925485f9dde" config-ref="Database_Config">
+			<db:sql ><![CDATA[UPDATE Comments SET message = :message, updated_at = :updated_at
+WHERE id = :commentID and deleted_at is null]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	commentID: vars.commentID,
+	message: payload.message,
+	updated_at: vars.currentDateTime
+}]]]></db:input-parameters>
+		</db:update>
+		<db:select doc:name="Select" doc:id="5321313b-a3e5-4363-8657-a76f3fa69a3b" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from Comments where id = :ID and deleted_at is null;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	ID: vars.commentID
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="1181e753-8c9d-4681-a717-897541e947bd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+var element = payload[0]
+---
+{
+	id: element.id,
+	newsId: element.newsId,
+	message: element.message,
+	created_at: element.created_at,
+	updated_at: element.updated_at,
+	deleted_at: element.deleted_at
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="GetCommentByNewsID" doc:id="2bbf4735-7a04-415d-beb0-440d9804c977" >
+		<db:select doc:name="Select" doc:id="51342219-e3ec-4efb-a3c0-4301e97c4774" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM Comments WHERE newsId = :newsId AND deleted_at IS NULL]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	newsId: attributes.uriParams.newsID
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="3cdf48b5-0507-4fe9-8345-63738b311394" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+payload map {
+	id: $.id,
+	newsId: $.newsId,
+	message: $.message,
+	created_at: $.created_at,
+	updated_at: $.updated_at,
+	deleted_at: $.deleted_at
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="GetAllCommentByNewsID" doc:id="665de2f5-0e1a-4fd6-9864-c6d9533ee213" >
+		<logger level="INFO" doc:name="Logger" doc:id="c492b09a-7fbe-49f6-b039-6d16a0a3c7a9" />
+		<db:select doc:name="Select" doc:id="b0510386-0002-4997-adef-da92e1496e7f" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM Comments WHERE newsId = :newsId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	newsId: attributes.uriParams.newsID
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="a507b6b8-ba53-4fae-be2f-188cbdb9f369" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+payload map {
+	id: $.id,
+	newsId: $.newsId,
+	message: $.message,
+	created_at: $.created_at,
+	updated_at: $.updated_at,
+	deleted_at: $.deleted_at
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_2bbf4735_7a04_415d_beb0_440d9804c977_Output_Payload = Array<{  newsId: Number,   updated_at: String,   created_at: String,   id: Number,   message: String,   deleted_at?: String,   _?: Any}>
+

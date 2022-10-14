@@ -1,0 +1,23 @@
+%dw 2.0
+
+type auto_665de2f5_0e1a_4fd6_9864_c6d9533ee213_Input_Attributes = {|
+  clientCertificate?: {|
+    publicKey?: {|  |}, 
+    "type"?: String, 
+    encoded?: Binary
+  |}, 
+  headers: {|  |}, 
+  listenerPath: String, 
+  method: String, 
+  queryParams: {|  |}, 
+  queryString: String, 
+  relativePath: String, 
+  remoteAddress: String, 
+  requestPath: String, 
+  requestUri: String, 
+  scheme: String, 
+  uriParams: {| newsID: String |}, 
+  version: String, 
+  localAddress: String
+|}
+

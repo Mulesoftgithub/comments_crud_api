@@ -1,0 +1,81 @@
+#%RAML 1.0
+title: Comments CRUD API
+
+types:
+  commentRequest: !include dataTypes/commentRequest.raml
+  commentResponse: !include  dataTypes/commentResponse.raml
+  messageType: !include dataTypes/messageType.raml
+
+/comments:
+  post:
+      body:
+        application/json:
+          type: commentRequest
+          example: !include examples/commentRequestExample.json
+      responses:
+        200:
+          body:
+            application/json:
+              type: commentResponse
+              example: !include examples/commentResponseExample.json
+
+
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+            type: commentResponse[]
+            example: !include examples/commentsResponseExample.json
+  
+  
+  /{commentID}:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: commentResponse
+              example: !include examples/commentResponseExample.json
+
+    
+    put:
+      body:
+        application/json:
+          type: messageType
+          example: { "message": "Coment was changed" }
+      responses:
+        200:
+          body:
+            application/json:
+              type: commentResponse
+              example: !include examples/commentResponseExample.json
+
+
+    delete:
+      responses:
+        200:
+          body:
+            application/json:
+              type: messageType
+              example: { "message": "Comment deleted successuflly" }
+
+
+  /News/{newsID}:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: commentResponse[]
+              example: !include examples/commentsResponseExample.json
+    
+
+    /all:
+      get:
+        responses:
+          200:
+            body:
+              application/json:
+                type: commentResponse
+                example: !include examples/commentResponseExample.json
